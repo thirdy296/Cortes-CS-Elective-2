@@ -1,9 +1,9 @@
 import 'package:go_router/go_router.dart';
-import '../models/cart_notifier.dart';
-import '../screens/home_screen.dart';
-import '../screens/product_detail_screen.dart';
-import '../screens/cart_screen.dart';
-import '../screens/checkout_screen.dart';
+import 'models/cart_notifier.dart';
+import 'screens/home_screen.dart';
+import 'screens/product_detail_screen.dart';
+import 'screens/cart_screen.dart';
+import 'screens/checkout_screen.dart';
 
 GoRouter createRouter(CartNotifier cartNotifier) {
   return GoRouter(

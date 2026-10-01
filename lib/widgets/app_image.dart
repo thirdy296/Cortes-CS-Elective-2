@@ -24,16 +24,7 @@ class AppImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
-        errorBuilder: (_, _, _) => Container(
-          width: width,
-          height: height,
-          color: colorScheme.surfaceContainerHighest,
-          child: Icon(
-            Icons.sports_tennis,
-            size: (width != null && width! < 60) ? 24 : 48,
-            color: colorScheme.primary.withValues(alpha: 0.5),
-          ),
-        ),
+        errorBuilder: (_, _, _) => _placeholder(colorScheme),
       );
     }
 
@@ -53,15 +44,19 @@ class AppImage extends StatelessWidget {
           ),
         );
       },
-      errorBuilder: (_, _, _) => Container(
-        width: width,
-        height: height,
-        color: colorScheme.surfaceContainerHighest,
-        child: Icon(
-          Icons.sports_tennis,
-          size: (width != null && width! < 60) ? 24 : 48,
-          color: colorScheme.primary.withValues(alpha: 0.5),
-        ),
+      errorBuilder: (_, _, _) => _placeholder(colorScheme),
+    );
+  }
+
+  Widget _placeholder(ColorScheme colorScheme) {
+    return Container(
+      width: width,
+      height: height,
+      color: colorScheme.surfaceContainerHighest,
+      child: Icon(
+        Icons.sports_tennis,
+        size: (width != null && width! < 60) ? 24 : 48,
+        color: colorScheme.primary.withValues(alpha: 0.5),
       ),
     );
   }

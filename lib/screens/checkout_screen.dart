@@ -1,190 +1,164 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../screens/home_screen.dart';
-import '../utils/formatters.dart';
-import '../widgets/app_image.dart';
+import 'home_screen.dart';
 
-class CheckoutScreen extends StatelessWidget {
+class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
+
+  @override
+  State<CheckoutScreen> createState() => _CheckoutScreenState();
+}
+
+class _CheckoutScreenState extends State<CheckoutScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _emailController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _addressController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  void _submitOrder() {
+    if (_formKey.currentState!.validate()) {
+      final cartNotifier = AppState.of(context).cartNotifier;
+      final total = cartNotifier.totalPrice;
+      cartNotifier.clear();
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          icon: const Icon(Icons.check_circle, color: Colors.green, size: 60),
+          title: const Text('Order Placed!'),
+          content: Text(
+            'Thank you for your purchase of ₱${total.toStringAsFixed(2)}!\nYour order will be shipped soon.',
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.go('/');
+              },
+              child: const Text('Back to Shop'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final cartNotifier = AppState.of(context).cartNotifier;
-    final items = cartNotifier.items;
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Order Summary'),
+        title: const Text('Checkout'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/cart'),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Success banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    colorScheme.tertiary.withValues(alpha: 0.15),
-                    colorScheme.primary.withValues(alpha: 0.1),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: colorScheme.tertiary.withValues(alpha: 0.3),
+        padding: const EdgeInsets.all(20.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Order Summary', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Items (${cartNotifier.totalItemCount}):'),
+                          Text('₱${cartNotifier.totalPrice.toStringAsFixed(2)}'),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Shipping:'),
+                          Text('FREE', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Total:', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          Text(
+                            '₱${cartNotifier.totalPrice.toStringAsFixed(2)}',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              child: Column(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: colorScheme.tertiary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check_rounded,
-                      color: Colors.white,
-                      size: 36,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Order Placed Successfully!',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: colorScheme.tertiary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Thank you for your purchase. Your paddle is on its way!',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.outline,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+              const SizedBox(height: 24),
+              Text('Shipping Details', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
+                  prefixIcon: Icon(Icons.person),
+                ),
+                validator: (val) =>
+                    val == null || val.isEmpty ? 'Please enter your name' : null,
               ),
-            ),
-            const SizedBox(height: 28),
-
-            Text(
-              'Order Details',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800, fontSize: 18),
-            ),
-            const SizedBox(height: 12),
-
-            // Item list
-            ...items.map((item) {
-              final subtotal = item.product.price * item.quantity;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Card(
-                  margin: EdgeInsets.zero,
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: AppImage(
-                            urlOrAsset: item.product.imageUrl,
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.product.name,
-                                style: theme.textTheme.titleMedium
-                                    ?.copyWith(fontSize: 13),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Qty: ${item.quantity}  ×  ${formatPeso(item.product.price)}',
-                                style: TextStyle(
-                                  color: colorScheme.outline,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Text(
-                          formatPeso(subtotal),
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: colorScheme.primary,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email Address',
+                  prefixIcon: Icon(Icons.email),
                 ),
-              );
-            }),
-
-            const SizedBox(height: 12),
-            Divider(color: theme.dividerColor),
-            const SizedBox(height: 12),
-
-            // Grand total
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Grand Total',
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800, fontSize: 16),
-                ),
-                Text(
-                  formatPeso(cartNotifier.totalPrice),
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-
-            // Go back to shop
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () {
-                  cartNotifier.clear();
-                  context.go('/');
-                },
-                icon: const Icon(Icons.explore_outlined),
-                label: const Text('Continue Shopping'),
+                keyboardType: TextInputType.emailAddress,
+                validator: (val) => val == null || !val.contains('@')
+                    ? 'Please enter a valid email'
+                    : null,
               ),
-            ),
-            const SizedBox(height: 16),
-          ],
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _addressController,
+                decoration: const InputDecoration(
+                  labelText: 'Shipping Address',
+                  prefixIcon: Icon(Icons.home),
+                ),
+                maxLines: 2,
+                validator: (val) => val == null || val.isEmpty
+                    ? 'Please enter your address'
+                    : null,
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _submitOrder,
+                  child: const Text('Place Order'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

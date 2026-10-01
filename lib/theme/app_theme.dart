@@ -33,18 +33,33 @@ ThemeData lightTheme() {
       clipBehavior: Clip.antiAlias,
       color: Colors.white,
     ),
-    textTheme: const TextTheme(
+    textTheme: TextTheme(
       titleLarge: TextStyle(
         fontWeight: FontWeight.w700,
         fontSize: 18,
         letterSpacing: 0.2,
+        color: colorScheme.onSurface,
       ),
       titleMedium: TextStyle(
         fontWeight: FontWeight.w600,
         fontSize: 16,
+        color: colorScheme.onSurface,
       ),
-      bodyMedium: TextStyle(fontSize: 14, height: 1.5),
-      labelLarge: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+      bodyMedium: TextStyle(
+        fontSize: 14,
+        height: 1.5,
+        color: colorScheme.onSurface,
+      ),
+      labelLarge: TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 15,
+        color: colorScheme.onSurface,
+      ),
+      labelSmall: TextStyle(
+        fontWeight: FontWeight.w500,
+        fontSize: 11,
+        color: colorScheme.onSurfaceVariant,
+      ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -88,13 +103,13 @@ ThemeData darkTheme() {
   return ThemeData(
     useMaterial3: true,
     colorScheme: colorScheme,
-    scaffoldBackgroundColor: const Color(0xFF0F172A),
-    appBarTheme: AppBarTheme(
-      backgroundColor: const Color(0xFF1E293B),
+    scaffoldBackgroundColor: const Color(0xFF090D16),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF121212),
       foregroundColor: Colors.white,
       elevation: 0,
       centerTitle: false,
-      titleTextStyle: const TextStyle(
+      titleTextStyle: TextStyle(
         fontFamily: 'Roboto',
         fontWeight: FontWeight.w700,
         fontSize: 20,
@@ -104,25 +119,40 @@ ThemeData darkTheme() {
     ),
     cardTheme: CardThemeData(
       elevation: 4,
-      shadowColor: Colors.black54,
+      shadowColor: Colors.black,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
       ),
       clipBehavior: Clip.antiAlias,
-      color: const Color(0xFF1E293B),
+      color: const Color(0xFF121212),
     ),
-    textTheme: const TextTheme(
+    textTheme: TextTheme(
       titleLarge: TextStyle(
         fontWeight: FontWeight.w700,
         fontSize: 18,
         letterSpacing: 0.2,
+        color: colorScheme.onSurface,
       ),
       titleMedium: TextStyle(
         fontWeight: FontWeight.w600,
         fontSize: 16,
+        color: colorScheme.onSurface,
       ),
-      bodyMedium: TextStyle(fontSize: 14, height: 1.5),
-      labelLarge: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+      bodyMedium: TextStyle(
+        fontSize: 14,
+        height: 1.5,
+        color: colorScheme.onSurface,
+      ),
+      labelLarge: TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 15,
+        color: colorScheme.onSurface,
+      ),
+      labelSmall: TextStyle(
+        fontWeight: FontWeight.w500,
+        fontSize: 11,
+        color: colorScheme.onSurfaceVariant,
+      ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -155,3 +185,4 @@ ThemeData darkTheme() {
     ),
   );
 }
+

@@ -56,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,13 +66,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${sampleProducts.length} paddles available',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.outline,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
               ],
@@ -105,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// --- AppState InheritedWidget for shared state ---
+
 
 class AppState extends InheritedWidget {
   final CartNotifier cartNotifier;
