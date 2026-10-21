@@ -20,6 +20,9 @@ class Pokemon {
     this.types = const [],
   });
 
+  /// Zero-padded ID for display, e.g. 25 → "#025".
+  String get formattedId => '#${id.toString().padLeft(3, '0')}';
+
   /// Parses one entry from the PokeAPI list response.
   /// The list endpoint only gives us "name" and "url", so we extract
   /// the numeric ID from the URL. Types are added later via [copyWith].

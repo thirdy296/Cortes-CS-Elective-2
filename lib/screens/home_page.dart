@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/pokemon.dart';
 import '../providers/pokemon_list_provider.dart';
 import '../services/pokemon_service.dart';
+import '../widgets/pokedex_app_bar.dart';
 import '../widgets/pokemon_card.dart';
 import '../widgets/state_views.dart';
 
@@ -21,30 +22,16 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(
-        // Pokédex-style red AppBar with white text.
-        backgroundColor: Colors.red,
-        foregroundColor: Colors.white,
-        title: const Text(
-          'Pokédex',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-            letterSpacing: 1,
-          ),
+    return PokedexScaffold(
+      title: 'Pokédex',
+      actions: [
+        IconButton(
+          tooltip: 'Refresh',
+          icon: const Icon(Icons.refresh),
+          // Same existing method as pull-to-refresh — no extra refresh().
+          onPressed: () => ref.read(pokemonListProvider.notifier).fetch(),
         ),
-        centerTitle: true,
-        elevation: 4,
-        actions: [
-          IconButton(
-            tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh),
-            // Same existing method as pull-to-refresh — no extra refresh().
-            onPressed: () => ref.read(pokemonListProvider.notifier).fetch(),
-          ),
-        ],
-      ),
+      ],
       body: const _PokemonListView(),
     );
   }

@@ -82,4 +82,53 @@ void main() {
     await tester.pumpAndSettle();
     expect(service.calls, 3);
   });
+
+  testWidgets('favorites: heart on card + detail, panel on both screens',
+      (tester) async {
+    await tester.pumpWidget(buildApp(FakePokemonService()));
+    await tester.pumpAndSettle();
+
+    // Open the panel → empty message.
+    await tester.tap(find.byTooltip('Show favorites'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('No favorite Pokémon yet'), findsOneWidget);
+
+    // Heart on the Charmander card → panel updates instantly.
+    final charmanderCard = find.ancestor(
+      of: find.text('Charmander'),
+      matching: find.byType(Card),
+    );
+    await tester.tap(find.descendant(
+      of: charmanderCard,
+      matching: find.byIcon(Icons.favorite_border),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('No favorite Pokémon yet'), findsNothing);
+    expect(find.text('Favorites (1)'), findsOneWidget);
+    expect(
+      find.descendant(of: charmanderCard, matching: find.byIcon(Icons.favorite)),
+      findsOneWidget,
+    );
+
+    // Open detail → panel is still open there and shows the favorite.
+    // (The name is also shown in the panel now, so tap the card itself.)
+    await tester.tap(charmanderCard);
+    await tester.pumpAndSettle();
+    expect(find.text('#004'), findsOneWidget);
+    expect(find.text('Favorites (1)'), findsOneWidget);
+
+    // Un-favorite from the detail page → panel empty again.
+    await tester.tap(find.text('Remove from favorites'));
+    await tester.pumpAndSettle();
+    expect(find.text('Favorites (0)'), findsOneWidget);
+
+    // Close the panel on the detail screen, go back: closed on home too.
+    await tester.tap(find.byTooltip('Hide favorites'));
+    await tester.pumpAndSettle();
+    expect(find.text('Favorites (0)'), findsNothing);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Favorites (0)'), findsNothing);
+    expect(find.byTooltip('Show favorites'), findsOneWidget);
+  });
 }
