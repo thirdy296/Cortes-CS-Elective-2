@@ -1,17 +1,24 @@
-# Pokédex List — CS Elective 2: Dart Async Activity
+# Pokédex — CS Elective 2: Midterm Exam (Riverpod)
 
-A Flutter app that fetches and displays the first 30 Pokémon from the
-[PokéAPI](https://pokeapi.co/) using Dart's `Future` and `FutureBuilder`.
+A Flutter Pokédex that loads the first 30 Pokémon from the
+[PokéAPI](https://pokeapi.co/) and manages all app state with
+**Riverpod** (`flutter_riverpod`, hand-written `Notifier` / `AsyncNotifier`,
+no code generation).
+
+See **[VIDEO_NOTES.md](VIDEO_NOTES.md)** for the architecture walkthrough.
 
 ---
 
 ## Features
 
-- Fetches 30 Pokémon from `https://pokeapi.co/api/v2/pokemon?limit=30`
-- Displays them in a responsive 2-column grid (more columns on wider screens)
-- Each card shows the official artwork, zero-padded ID (`#001`, `#025` …), and name
-- Three explicit UI states: **Loading**, **Error** (with a Retry button), and **Empty**
-- Uses `Image.network` with an inline loading spinner and a fallback icon
+- Fetches 30 Pokémon from `https://pokeapi.co/api/v2/pokemon?limit=30`, then
+  each Pokémon's details (`/pokemon/{id}`) concurrently with `Future.wait` for its types
+- Loading spinner, readable error message with **Try again**, empty state
+- Pull-to-refresh and an AppBar refresh button (both call `fetch()`)
+- **Nicknames**: set / edit / remove; the original name stays visible
+- **Favorites**: heart on every card and on the detail page, plus a retractable
+  favorites panel (with count badge) on every screen
+- **Type filter**: coloured chips built from the loaded data
 
 ---
 
@@ -19,52 +26,29 @@ A Flutter app that fetches and displays the first 30 Pokémon from the
 
 ```
 lib/
-  main.dart                     → App entry point, MaterialApp setup
-  models/
-    pokemon.dart                → Pokemon class with factory fromJson
-  services/
-    pokemon_service.dart        → PokemonService.fetchPokemon() — HTTP + timeout
-  widgets/
-    pokemon_card.dart           → Reusable card widget (image, ID, name)
-    state_views.dart            → LoadingView, ErrorView, EmptyView
+  main.dart                       → ProviderScope + MaterialApp
+  models/pokemon.dart             → Pokemon (id, name, imageUrl, types)
+  services/pokemon_service.dart   → PokéAPI calls + readable errors
+  providers/
+    pokemon_list_provider.dart    → PokemonListNotifier (AsyncNotifier)
+    nickname_provider.dart        → NicknameNotifier
+    favorites_provider.dart       → FavoritesNotifier + favoritePokemonProvider
+    type_filter_provider.dart     → TypeFilterNotifier + derived providers
+    favorites_panel_provider.dart → FavoritesPanelNotifier
   screens/
-    pokedex_screen.dart         → StatefulWidget + FutureBuilder grid
+    home_page.dart                → grid, filter bar, refresh
+    pokemon_detail_page.dart      → detail, favorite, nickname
+  theme/pokemon_type_style.dart   → type colours + TypePill
+  widgets/                        → card, panel, AppBar, dialog, filter bar, ...
+test/widget_test.dart             → widget tests with a fake service
 ```
-
----
-
-## Why Future and not Stream?
-
-A **`Future`** is the right choice here because fetching the Pokémon list is a
-**one-time HTTP request** that produces a **single result exactly once** — either
-a successful list or an error.
-
-A **`Stream`** is designed for data that arrives **over time in multiple
-values** — for example live sensor readings, WebSocket messages, or a
-real-time database feed. This activity does none of that: we fire one `GET`
-request, wait for the response, parse it, and we are done.
-
-Using a `Stream` where a `Future` suffices would add unnecessary complexity
-(managing subscriptions, handling pauses/cancellations) with no benefit.
-`FutureBuilder` maps perfectly onto the three states we need to handle:
-`ConnectionState.waiting` → loading, `hasError` → error, and `hasData` → grid.
 
 ---
 
 ## Getting Started
 
 ```bash
-# Install dependencies
 flutter pub get
-
-# Run the app
+flutter test
 flutter run
 ```
-
----
-
-## Resources
-
-- [Flutter documentation](https://docs.flutter.dev/)
-- [PokéAPI](https://pokeapi.co/)
-- [Dart async / await](https://dart.dev/codelabs/async-await)
