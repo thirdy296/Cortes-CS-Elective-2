@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/pokemon.dart';
 import '../providers/favorites_panel_provider.dart';
 import '../providers/favorites_provider.dart';
+import '../providers/nickname_provider.dart';
 
 /// Expands/collapses with AnimatedSize based on [favoritesPanelProvider].
 class FavoritesPanel extends ConsumerWidget {
@@ -90,7 +91,7 @@ class _FavoritesPanelContent extends ConsumerWidget {
   }
 }
 
-/// One favorite: sprite, name, and a remove button.
+/// One favorite: sprite, nickname (or name), and a remove button.
 class _FavoriteTile extends ConsumerWidget {
   final Pokemon pokemon;
 
@@ -98,6 +99,10 @@ class _FavoriteTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final nickname = ref.watch(
+      nicknameProvider.select((nicknames) => nicknames[pokemon.id]),
+    );
+
     return ListTile(
       dense: true,
       leading: Image.network(
@@ -108,9 +113,11 @@ class _FavoriteTile extends ConsumerWidget {
             const Icon(Icons.catching_pokemon, color: Colors.grey),
       ),
       title: Text(
-        pokemon.name,
+        nickname ?? pokemon.name,
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
+      // Original name stays visible under the nickname.
+      subtitle: nickname == null ? null : Text('(${pokemon.name})'),
       trailing: IconButton(
         tooltip: 'Remove ${pokemon.name} from favorites',
         icon: const Icon(Icons.close),

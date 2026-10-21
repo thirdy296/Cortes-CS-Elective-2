@@ -1,18 +1,23 @@
 // widgets/pokemon_card.dart
 // A reusable card widget that displays a single Pokémon's
 // official artwork, formatted ID (#001, #025 …), name, and types,
-// plus a heart in the top-right corner to toggle it as a favorite.
+// plus a heart in the top-right corner to toggle it as a favorite
+// and an edit icon in the top-left corner to set a nickname.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/pokemon.dart';
 import '../providers/favorites_provider.dart';
+import '../providers/nickname_provider.dart';
 import '../screens/pokemon_detail_page.dart';
 import '../theme/pokemon_type_style.dart';
 import 'favorite_heart_button.dart';
+import 'nickname_editor_dialog.dart';
+import 'pokemon_name_label.dart';
 
 /// Displays one Pokémon. Tap → detail page. Heart → toggle favorite.
+/// Long-press or edit icon → nickname editor.
 class PokemonCard extends ConsumerWidget {
   final Pokemon pokemon;
 
@@ -25,6 +30,10 @@ class PokemonCard extends ConsumerWidget {
     // the set, but this bool stays the same, so this card does NOT rebuild.
     final isFavorite = ref.watch(
       favoritesProvider.select((ids) => ids.contains(pokemon.id)),
+    );
+    // Same idea: only MY nickname (null if none).
+    final nickname = ref.watch(
+      nicknameProvider.select((nicknames) => nicknames[pokemon.id]),
     );
 
     return Card(
@@ -39,11 +48,23 @@ class PokemonCard extends ConsumerWidget {
             builder: (_) => PokemonDetailPage(pokemon: pokemon),
           ),
         ),
+        onLongPress: () => showNicknameEditor(context, pokemon),
         child: Stack(
           children: [
             Padding(
               padding: const EdgeInsets.all(10),
-              child: _CardBody(pokemon: pokemon),
+              child: _CardBody(pokemon: pokemon, nickname: nickname),
+            ),
+            // ── Nickname editor (top-left corner) ───────────────────
+            Positioned(
+              top: 0,
+              left: 0,
+              child: IconButton(
+                tooltip: 'Edit nickname',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.edit, size: 18, color: Colors.grey),
+                onPressed: () => showNicknameEditor(context, pokemon),
+              ),
             ),
             // ── Favorite indicator (top-right corner) ────────────────
             Positioned(
@@ -62,11 +83,12 @@ class PokemonCard extends ConsumerWidget {
   }
 }
 
-/// Artwork, ID, name and type pills.
+/// Artwork, ID, name (with nickname) and type pills.
 class _CardBody extends StatelessWidget {
   final Pokemon pokemon;
+  final String? nickname;
 
-  const _CardBody({required this.pokemon});
+  const _CardBody({required this.pokemon, required this.nickname});
 
   @override
   Widget build(BuildContext context) {
@@ -97,15 +119,8 @@ class _CardBody extends StatelessWidget {
         const SizedBox(height: 2),
 
         // ── Name ─────────────────────────────────────────────────────
-        Text(
-          pokemon.name,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
+        // Name: nickname on top, original name underneath.
+        PokemonNameLabel(name: pokemon.name, nickname: nickname),
 
         const SizedBox(height: 6),
 

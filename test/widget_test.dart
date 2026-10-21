@@ -131,4 +131,63 @@ void main() {
     expect(find.text('Favorites (0)'), findsNothing);
     expect(find.byTooltip('Show favorites'), findsOneWidget);
   });
+
+  testWidgets('nicknames: set, edit, remove; original name stays visible',
+      (tester) async {
+    await tester.pumpWidget(buildApp(FakePokemonService()));
+    await tester.pumpAndSettle();
+
+    final squirtleCard = find.ancestor(
+      of: find.text('Squirtle'),
+      matching: find.byType(Card),
+    );
+
+    // Set from the card's edit icon. "Remove nickname" starts disabled.
+    await tester.tap(find.descendant(
+      of: squirtleCard,
+      matching: find.byTooltip('Edit nickname'),
+    ));
+    await tester.pumpAndSettle();
+    final removeButton = find.widgetWithText(TextButton, 'Remove nickname');
+    expect(tester.widget<TextButton>(removeButton).onPressed, isNull);
+    await tester.enterText(find.byType(TextField), '  Shelly  ');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Shelly'), findsOneWidget); // trimmed
+    expect(find.text('(Squirtle)'), findsOneWidget);
+
+    // Detail shows it too; edit it there (field is prefilled).
+    await tester.tap(find.text('Shelly'));
+    await tester.pumpAndSettle();
+    expect(find.text('Shelly'), findsOneWidget);
+    expect(find.text('(Squirtle)'), findsOneWidget);
+    await tester.tap(find.text('Edit nickname').last);
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, 'Shelly'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Captain');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Captain'), findsOneWidget);
+
+    // Back on home the card updated too. Remove it via the dialog.
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Captain'), findsOneWidget);
+    await tester.longPress(find.text('Captain'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remove nickname'));
+    await tester.pumpAndSettle();
+    expect(find.text('Captain'), findsNothing);
+    expect(find.text('Squirtle'), findsOneWidget);
+    expect(find.text('(Squirtle)'), findsNothing);
+
+    // Whitespace-only save does not create a nickname.
+    await tester.longPress(find.text('Squirtle'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '   ');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('(Squirtle)'), findsNothing);
+  });
 }

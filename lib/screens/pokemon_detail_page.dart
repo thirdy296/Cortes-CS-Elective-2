@@ -7,10 +7,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/pokemon.dart';
 import '../providers/favorites_provider.dart';
+import '../providers/nickname_provider.dart';
 import '../theme/pokemon_type_style.dart';
 import '../widgets/favorite_heart_button.dart';
+import '../widgets/nickname_editor_dialog.dart';
 import '../widgets/pokedex_app_bar.dart';
 import '../widgets/pokemon_card.dart';
+import '../widgets/pokemon_name_label.dart';
 
 class PokemonDetailPage extends ConsumerWidget {
   final Pokemon pokemon;
@@ -22,9 +25,19 @@ class PokemonDetailPage extends ConsumerWidget {
     final isFavorite = ref.watch(
       favoritesProvider.select((ids) => ids.contains(pokemon.id)),
     );
+    final nickname = ref.watch(
+      nicknameProvider.select((nicknames) => nicknames[pokemon.id]),
+    );
 
     return PokedexScaffold(
       title: pokemon.formattedId,
+      actions: [
+        IconButton(
+          tooltip: 'Edit nickname',
+          icon: const Icon(Icons.edit),
+          onPressed: () => showNicknameEditor(context, pokemon),
+        ),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Center(
@@ -43,12 +56,11 @@ class PokemonDetailPage extends ConsumerWidget {
                 const SizedBox(height: 16),
 
                 // ── Name ──────────────────────────────────────────────
-                Text(
-                  pokemon.name,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                  textAlign: TextAlign.center,
+                // Name: nickname on top, original name underneath.
+                PokemonNameLabel(
+                  name: pokemon.name,
+                  nickname: nickname,
+                  fontSize: 28,
                 ),
                 const SizedBox(height: 12),
 
@@ -85,6 +97,13 @@ class PokemonDetailPage extends ConsumerWidget {
                         isFavorite
                             ? 'Remove from favorites'
                             : 'Add to favorites',
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => showNicknameEditor(context, pokemon),
+                      icon: const Icon(Icons.edit),
+                      label: Text(
+                        nickname == null ? 'Add nickname' : 'Edit nickname',
                       ),
                     ),
                   ],
