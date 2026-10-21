@@ -1,10 +1,11 @@
 // widgets/pokemon_card.dart
 // A reusable card widget that displays a single Pokémon's
-// official artwork, formatted ID (#001, #025 …), and name.
+// official artwork, formatted ID (#001, #025 …), name, and types.
 
 import 'package:flutter/material.dart';
 
 import '../models/pokemon.dart';
+import '../theme/pokemon_type_style.dart';
 
 /// Displays one Pokémon in a rounded card with image, ID, and name.
 class PokemonCard extends StatelessWidget {
@@ -75,6 +76,17 @@ class PokemonCard extends StatelessWidget {
                 color: Colors.black87,
               ),
               overflow: TextOverflow.ellipsis,
+            ),
+
+            const SizedBox(height: 6),
+
+            // ── Types ─────────────────────────────────────────────────────
+            Wrap(
+              spacing: 4,
+              alignment: WrapAlignment.center,
+              children: [
+                for (final type in pokemon.types) TypePill(type: type),
+              ],
             ),
           ],
         ),

@@ -3,7 +3,8 @@
 // three non-data states of the Pokédex screen:
 //   • LoadingView  – shown while the Future is pending
 //   • ErrorView    – shown when the Future completes with an error
-//   • EmptyView    – shown when the list is empty (edge case)
+//   • EmptyView    – shown when there is nothing to display (empty list,
+//                    or a type filter with no matches)
 
 import 'package:flutter/material.dart';
 
@@ -69,7 +70,7 @@ class ErrorView extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: const Text('Try again'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
@@ -89,23 +90,45 @@ class ErrorView extends StatelessWidget {
   }
 }
 
-/// Shown when the API returns an empty list (edge case).
+/// Shown when there is nothing to display.
+/// Optionally shows a button (e.g. "Clear filter") via [actionLabel]/[onAction].
 class EmptyView extends StatelessWidget {
-  const EmptyView({super.key});
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  const EmptyView({
+    super.key,
+    this.message = 'No Pokémon found',
+    this.actionLabel,
+    this.onAction,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'No Pokémon found',
-            style: TextStyle(fontSize: 18, color: Colors.grey),
-          ),
-        ],
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.search_off, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: const TextStyle(fontSize: 18, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.filter_alt_off),
+                label: Text(actionLabel!),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

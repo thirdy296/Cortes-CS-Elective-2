@@ -1,13 +1,15 @@
 // main.dart
-// Entry point for the Pokédex activity (CS Elective 2 – Dart Async Activity).
-// Sets up the MaterialApp with Material 3 theming and launches PokedexScreen.
+// Entry point for the Pokédex app (CS Elective 2 – Midterm Exam).
+// ProviderScope stores the state of every Riverpod provider, so it must
+// wrap the whole app. Then MaterialApp launches HomePage.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'screens/pokedex_screen.dart';
+import 'screens/home_page.dart';
 
 void main() {
-  runApp(const PokedexApp());
+  runApp(const ProviderScope(child: PokedexApp()));
 }
 
 /// Root widget. Wraps the app in a MaterialApp with a red Pokédex theme.
@@ -26,7 +28,7 @@ class PokedexApp extends StatelessWidget {
         // Slightly off-white scaffold background for a softer look.
         scaffoldBackgroundColor: const Color(0xFFF5F5F5),
       ),
-      home: const PokedexScreen(),
+      home: const HomePage(),
     );
   }
 }
