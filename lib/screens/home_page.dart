@@ -2,8 +2,8 @@
 // The main screen of the Pokédex app.
 // It is a ConsumerWidget: it has NO setState and NO fetching logic.
 // It only:
-//   1. ref.watch()es the list provider and renders loading / error / data
-//      with AsyncValue.when.
+//   1. ref.watch()es filteredPokemonProvider (list + selected type) and
+//      renders loading / error / data with AsyncValue.when.
 //   2. calls ref.read(pokemonListProvider.notifier).fetch() for
 //      "Try again", pull-to-refresh, and the AppBar refresh button.
 
@@ -12,10 +12,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/pokemon.dart';
 import '../providers/pokemon_list_provider.dart';
+import '../providers/type_filter_provider.dart';
 import '../services/pokemon_service.dart';
 import '../widgets/pokedex_app_bar.dart';
 import '../widgets/pokemon_card.dart';
 import '../widgets/state_views.dart';
+import '../widgets/type_filter_bar.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -32,18 +34,24 @@ class HomePage extends ConsumerWidget {
           onPressed: () => ref.read(pokemonListProvider.notifier).fetch(),
         ),
       ],
-      body: const _PokemonListView(),
+      body: const Column(
+        children: [
+          TypeFilterBar(),
+          Expanded(child: _PokemonListView()),
+        ],
+      ),
     );
   }
 }
 
-/// Renders the three async states of the Pokémon list.
+/// Renders the three async states of the (filtered) Pokémon list.
 class _PokemonListView extends ConsumerWidget {
   const _PokemonListView();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pokemonAsync = ref.watch(pokemonListProvider);
+    final pokemonAsync = ref.watch(filteredPokemonProvider);
+    final selectedType = ref.watch(typeFilterProvider);
 
     return pokemonAsync.when(
       // Show the spinner for EVERY fetch (also refreshes), so the user always
@@ -55,6 +63,13 @@ class _PokemonListView extends ConsumerWidget {
         onRetry: () => ref.read(pokemonListProvider.notifier).fetch(),
       ),
       data: (pokemon) {
+        if (pokemon.isEmpty && selectedType != null) {
+          return EmptyView(
+            message: 'No $selectedType Pokémon in the current list',
+            actionLabel: 'Clear filter',
+            onAction: () => ref.read(typeFilterProvider.notifier).clearFilter(),
+          );
+        }
         if (pokemon.isEmpty) return const EmptyView();
         return RefreshIndicator(
           // Must return the Future so the indicator spins until it finishes.

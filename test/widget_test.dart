@@ -10,10 +10,18 @@ import 'package:shop_browser/main.dart';
 import 'package:shop_browser/models/pokemon.dart';
 import 'package:shop_browser/providers/pokemon_list_provider.dart';
 import 'package:shop_browser/services/pokemon_service.dart';
+import 'package:shop_browser/widgets/pokemon_card.dart';
 
-/// Returns fixed data, or throws while [shouldFail] is true.
+const starterPokemon = [
+  Pokemon(id: 1, name: 'Bulbasaur', imageUrl: '', types: ['grass', 'poison']),
+  Pokemon(id: 4, name: 'Charmander', imageUrl: '', types: ['fire']),
+  Pokemon(id: 7, name: 'Squirtle', imageUrl: '', types: ['water']),
+];
+
+/// Returns [pokemon], or throws while [shouldFail] is true.
 class FakePokemonService implements PokemonService {
   bool shouldFail;
+  List<Pokemon> pokemon = starterPokemon;
   int calls = 0;
 
   FakePokemonService({this.shouldFail = false});
@@ -25,11 +33,7 @@ class FakePokemonService implements PokemonService {
     if (shouldFail) {
       throw const PokemonApiException('No internet connection.');
     }
-    return const [
-      Pokemon(id: 1, name: 'Bulbasaur', imageUrl: '', types: ['grass', 'poison']),
-      Pokemon(id: 4, name: 'Charmander', imageUrl: '', types: ['fire']),
-      Pokemon(id: 7, name: 'Squirtle', imageUrl: '', types: ['water']),
-    ];
+    return pokemon;
   }
 }
 
@@ -189,5 +193,67 @@ void main() {
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
     expect(find.text('(Squirtle)'), findsNothing);
+  });
+
+  testWidgets('type filter: chips from data, All/clear, works with others',
+      (tester) async {
+    final service = FakePokemonService();
+    await tester.pumpWidget(buildApp(service));
+    await tester.pumpAndSettle();
+
+    // Chips are built from the loaded data, sorted: Fire, Grass, Poison, Water.
+    final chipLabels = tester
+        .widgetList<ChoiceChip>(find.byType(ChoiceChip))
+        .map((chip) => (chip.label as Text).data)
+        .toList();
+    expect(chipLabels, ['All', 'Fire', 'Grass', 'Poison', 'Water']);
+
+    // Favorite + nickname Bulbasaur first, then filter.
+    final bulbasaurCard = find.ancestor(
+      of: find.text('Bulbasaur'),
+      matching: find.byType(Card),
+    );
+    await tester.tap(find.descendant(
+      of: bulbasaurCard,
+      matching: find.byIcon(Icons.favorite_border),
+    ));
+    await tester.longPress(find.text('Bulbasaur'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Bulby');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    // Poison → only Bulbasaur, still favorite and nicknamed.
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Poison'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PokemonCard), findsOneWidget);
+    expect(find.text('Bulby'), findsOneWidget);
+    expect(find.text('(Bulbasaur)'), findsOneWidget);
+    expect(find.byIcon(Icons.favorite), findsOneWidget);
+
+    // "All" restores the full list.
+    await tester.tap(find.widgetWithText(ChoiceChip, 'All'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PokemonCard), findsNWidgets(3));
+
+    // Fire → Charmander only; (x) clears.
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Fire'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PokemonCard), findsOneWidget);
+    expect(find.text('Charmander'), findsOneWidget);
+    await tester.tap(find.byTooltip('Clear filter'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PokemonCard), findsNWidgets(3));
+
+    // Filter with no results after a refresh → message + Clear filter button.
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Fire'));
+    await tester.pumpAndSettle();
+    service.pokemon = starterPokemon.where((p) => p.id != 4).toList();
+    await tester.tap(find.byTooltip('Refresh'));
+    await tester.pumpAndSettle();
+    expect(find.text('No fire Pokémon in the current list'), findsOneWidget);
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Clear filter'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PokemonCard), findsNWidgets(2));
   });
 }
