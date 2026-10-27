@@ -1,6 +1,10 @@
 ﻿import 'package:flutter/material.dart';
 
-void main() {
+import 'supabase_config.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SupabaseConfig.init();
   runApp(const MyApp());
 }
 
@@ -72,29 +76,7 @@ class MusicPlayerScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Akasaka Sad',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Rina Sawayama',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    const Expanded(child: SongTitle()),
                     Row(
                       children: const [
                         Icon(Icons.add_circle_outline, color: Colors.white),
@@ -217,6 +199,57 @@ class MusicPlayerScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Shows the song title and artist, loaded from the Supabase `songs` table.
+/// Falls back to the built-in song if Supabase isn't configured or offline.
+class SongTitle extends StatelessWidget {
+  const SongTitle({super.key});
+
+  static const _fallback = {'title': 'Akasaka Sad', 'artist': 'Rina Sawayama'};
+
+  Future<Map<String, dynamic>> _loadSong() async {
+    if (!SupabaseConfig.isConfigured) return _fallback;
+    try {
+      return await supabase
+          .from('songs')
+          .select('title, artist')
+          .order('id')
+          .limit(1)
+          .single();
+    } catch (e) {
+      debugPrint('Could not load song from Supabase: $e');
+      return _fallback;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _loadSong(),
+      builder: (context, snapshot) {
+        final song = snapshot.data ?? _fallback;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              song['title'] as String,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              song['artist'] as String,
+              style: const TextStyle(color: Colors.white70, fontSize: 15),
+            ),
+          ],
+        );
+      },
     );
   }
 }
