@@ -37,6 +37,7 @@ dependencies:
 
   # Supabase backend (database, auth, storage)
   supabase_flutter: ^2.16.0
+  flutter_riverpod: ^3.5.0
 
 dev_dependencies:
   flutter_test:
