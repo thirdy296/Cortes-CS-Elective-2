@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
 import '../models/product.dart';
+import '../providers/auth_providers.dart';
 import '../providers/shop_providers.dart';
 import '../supabase_config.dart';
 import '../widgets/edit_product_dialog.dart';
@@ -33,6 +35,8 @@ class ShopScreen extends ConsumerWidget {
                 ? ref.read(shopFilterProvider.notifier).clearFilters
                 : null,
           ),
+          if (ref.watch(currentUserProvider) case final user?)
+            _AccountMenu(user: user),
         ],
       ),
       body: SupabaseConfig.isConfigured
@@ -216,6 +220,62 @@ class _Message extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Avatar button showing who is signed in (and how), with a sign-out item.
+class _AccountMenu extends ConsumerWidget {
+  const _AccountMenu({required this.user});
+  final User user;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final name = displayName(user);
+    final provider = signInProvider(user);
+    final avatarUrl = user.userMetadata?['avatar_url'] as String?;
+
+    return PopupMenuButton<String>(
+      tooltip: 'Account',
+      icon: CircleAvatar(
+        radius: 14,
+        backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+        child: avatarUrl == null
+            ? Text(name.isEmpty ? '?' : name[0].toUpperCase())
+            : null,
+      ),
+      onSelected: (value) async {
+        if (value != 'signout') return;
+        final messenger = ScaffoldMessenger.of(context);
+        try {
+          await ref.read(authServiceProvider).signOut();
+        } catch (e) {
+          messenger.showSnackBar(
+            SnackBar(content: Text('Sign out failed: $e')),
+          );
+        }
+      },
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          enabled: false,
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(name),
+            subtitle: Text(
+              'Signed in with ${provider == 'github' ? 'GitHub' : 'email'}',
+            ),
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: 'signout',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.logout),
+            title: Text('Sign out'),
+          ),
+        ),
+      ],
     );
   }
 }

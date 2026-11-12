@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'screens/shop_screen.dart';
+import 'screens/auth_gate.dart';
 import 'supabase_config.dart';
 
 Future<void> main() async {
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6B4A36)),
       ),
-      home: const ShopScreen(),
+      home: const AuthGate(),
     );
   }
 }

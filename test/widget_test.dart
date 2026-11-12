@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/main.dart';
 import 'package:flutter_application_1/models/product.dart';
 import 'package:flutter_application_1/providers/shop_providers.dart';
+import 'package:flutter_application_1/screens/login_screen.dart';
 import 'package:flutter_application_1/utils/formatters.dart';
 
 void main() {
@@ -39,5 +41,22 @@ void main() {
     expect(formatPeso(1299), '₱1,299');
     expect(formatPeso(12.5), '₱12.50');
     expect(formatPeso(1234567), '₱1,234,567');
+  });
+
+  testWidgets('Login screen offers GitHub and email sign-in', (tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: LoginScreen())),
+    );
+    expect(find.text('Continue with GitHub'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
+
+    // Validation runs before any network call.
+    await tester.tap(find.text('Sign in'));
+    await tester.pump();
+    expect(find.text('Enter a valid email'), findsOneWidget);
+
+    await tester.tap(find.text('No account? Create one'));
+    await tester.pump();
+    expect(find.text('Create account'), findsOneWidget);
   });
 }
