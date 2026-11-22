@@ -33,7 +33,8 @@ class OrderService {
         .from('orders')
         .select(Order.selectColumns)
         .eq('user_id', userId)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false)
+        .order('id', ascending: false); // stable when timestamps match
     return rows.map(Order.fromJson).toList();
   }
 
@@ -42,7 +43,8 @@ class OrderService {
     final rows = await supabase
         .from('orders')
         .select(Order.adminSelectColumns)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false)
+        .order('id', ascending: false); // stable when timestamps match
     return rows.map(Order.fromJson).toList();
   }
 

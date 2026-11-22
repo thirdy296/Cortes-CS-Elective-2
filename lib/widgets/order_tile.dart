@@ -3,6 +3,13 @@ import 'package:flutter/material.dart';
 import '../models/order.dart';
 import '../utils/formatters.dart';
 
+/// Finds an order's position from its [OrderTile] key, so a list can move the
+/// card (and whether it is expanded) along with the order when it re-sorts.
+int? orderIndexForKey(List<Order> orders, Key key) {
+  final index = orders.indexWhere((o) => ValueKey(o.id) == key);
+  return index < 0 ? null : index;
+}
+
 /// Expandable order summary: number, date, status, total, and its items.
 /// [trailing] lets the admin list add a status picker.
 class OrderTile extends StatelessWidget {

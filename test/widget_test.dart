@@ -6,10 +6,37 @@ import 'package:flutter_application_1/main.dart';
 import 'package:flutter_application_1/models/order.dart';
 import 'package:flutter_application_1/models/product.dart';
 import 'package:flutter_application_1/models/profile.dart';
+import 'package:flutter_application_1/providers/auth_providers.dart';
 import 'package:flutter_application_1/providers/cart_provider.dart';
 import 'package:flutter_application_1/providers/shop_providers.dart';
 import 'package:flutter_application_1/screens/login_screen.dart';
+import 'package:flutter_application_1/screens/product_form_screen.dart';
 import 'package:flutter_application_1/utils/formatters.dart';
+import 'package:flutter_application_1/widgets/order_tile.dart';
+
+class _TestUser extends Notifier<String?> {
+  @override
+  String? build() => 'user-a';
+  void change(String? id) => state = id;
+}
+
+final _testUserProvider = NotifierProvider<_TestUser, String?>(_TestUser.new);
+
+Order _order(int id, String itemName) => Order.fromJson({
+  'id': id,
+  'created_at': '2026-11-22T03:00:00Z',
+  'status': 'done',
+  'total': 100,
+  'order_items': [
+    {
+      'id': id,
+      'product_id': 1,
+      'product_name': itemName,
+      'unit_price': 100,
+      'quantity': 1,
+    },
+  ],
+});
 
 Product _product({int id = 1, int stock = 3, double price = 100}) => Product(
   id: id,
@@ -164,5 +191,76 @@ void main() {
   test('formatPeso', () {
     expect(formatPeso(1299), '₱1,299');
     expect(formatPeso(12.5), '₱12.50');
+  });
+
+  test('Price and stock show errors for invalid values', () {
+    expect(validatePrice('-1'), 'Must be 0 or more');
+    expect(validatePrice('abc'), 'Enter a number');
+    expect(validatePrice('1e5'), 'Enter a number');
+    expect(validatePrice(''), 'Enter a number');
+    expect(validatePrice('360'), isNull);
+    expect(validatePrice('360.50'), isNull);
+    expect(validatePrice('0'), isNull);
+
+    expect(validateStock('1.5'), 'Enter a whole number');
+    expect(validateStock('-1'), 'Must be 0 or more');
+    expect(validateStock(''), 'Enter a whole number');
+    expect(validateStock('32768'), 'Max 32767');
+    expect(validateStock('99999999999999999999'), 'Max 32767');
+    expect(validateStock('10'), isNull);
+    expect(validateStock('0'), isNull);
+  });
+
+  test('Cart empties when the signed-in user changes', () {
+    final container = ProviderContainer(
+      overrides: [
+        currentUserIdProvider.overrideWith(
+          (ref) => ref.watch(_testUserProvider),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    final sub = container.listen(cartProvider, (_, _) {});
+    addTearDown(sub.close);
+
+    container.read(cartProvider.notifier).add(_product());
+    expect(container.read(cartProvider), hasLength(1));
+
+    container.read(_testUserProvider.notifier).change(null);
+    expect(container.read(cartProvider), isEmpty);
+  });
+
+  testWidgets('An expanded order stays open when the list re-sorts', (
+    tester,
+  ) async {
+    final first = _order(3, 'Item of three');
+    final second = _order(4, 'Item of four');
+    final orders = ValueNotifier<List<Order>>([first, second]);
+    addTearDown(orders.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ValueListenableBuilder<List<Order>>(
+            valueListenable: orders,
+            builder: (_, list, _) => ListView.builder(
+              itemCount: list.length,
+              findChildIndexCallback: (key) => orderIndexForKey(list, key),
+              itemBuilder: (_, i) =>
+                  OrderTile(key: ValueKey(list[i].id), order: list[i]),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Order #3'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 × Item of three'), findsOneWidget);
+
+    orders.value = [second, first];
+    await tester.pumpAndSettle();
+    expect(find.text('1 × Item of three'), findsOneWidget);
+    expect(find.text('1 × Item of four'), findsNothing);
   });
 }

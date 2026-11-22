@@ -32,7 +32,9 @@ class OrderHistoryView extends ConsumerWidget {
             : ListView.builder(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: list.length,
-                itemBuilder: (_, i) => OrderTile(order: list[i]),
+                findChildIndexCallback: (key) => orderIndexForKey(list, key),
+                itemBuilder: (_, i) =>
+                    OrderTile(key: ValueKey(list[i].id), order: list[i]),
               ),
       ),
     );

@@ -34,7 +34,10 @@ class AdminOrdersView extends ConsumerWidget {
             : ListView.builder(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: list.length,
+                // Keep each card's state with its order when the list re-sorts.
+                findChildIndexCallback: (key) => orderIndexForKey(list, key),
                 itemBuilder: (_, i) => OrderTile(
+                  key: ValueKey(list[i].id),
                   order: list[i],
                   trailing: _StatusPicker(order: list[i]),
                 ),
@@ -83,6 +86,8 @@ class _StatusPickerState extends ConsumerState<_StatusPicker> {
         const SizedBox(width: 12),
         Expanded(
           child: DropdownButtonFormField<String>(
+            // initialValue is only read once, so rebuild when the status changes.
+            key: ValueKey(widget.order.status),
             initialValue: widget.order.status,
             isDense: true,
             items: [

@@ -7,6 +7,26 @@ import '../models/product.dart';
 import '../providers/shop_providers.dart';
 import '../widgets/state_views.dart';
 
+/// Price must be a plain number that is 0 or more.
+String? validatePrice(String? input) {
+  final text = input?.trim() ?? '';
+  if (!RegExp(r'^-?(\d+\.?\d*|\.\d+)$').hasMatch(text)) return 'Enter a number';
+  if (double.parse(text) < 0) return 'Must be 0 or more';
+  return null;
+}
+
+/// Stock must be a whole number from 0 to 32767 (a smallint in the database).
+String? validateStock(String? input) {
+  final text = input?.trim() ?? '';
+  if (!RegExp(r'^-?\d+$').hasMatch(text)) return 'Enter a whole number';
+  if (text.startsWith('-') && RegExp(r'[1-9]').hasMatch(text)) {
+    return 'Must be 0 or more';
+  }
+  final value = int.tryParse(text);
+  if (value == null || value > 32767) return 'Max 32767';
+  return null;
+}
+
 /// Admin form to add a product, or edit one when [product] is given (the
 /// fields start with its current values).
 class ProductFormScreen extends ConsumerStatefulWidget {
@@ -176,16 +196,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                         ),
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
+                          signed: true,
                         ),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                        ],
-                        validator: (v) {
-                          final value = double.tryParse(v?.trim() ?? '');
-                          if (value == null) return 'Enter a number';
-                          if (value < 0) return 'Must be 0 or more';
-                          return null;
-                        },
+                        validator: validatePrice,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -193,17 +206,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                       child: TextFormField(
                         controller: _stock,
                         decoration: const InputDecoration(labelText: 'Stock *'),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        validator: (v) {
-                          final value = int.tryParse(v?.trim() ?? '');
-                          if (value == null) return 'Enter a whole number';
-                          if (value < 0) return 'Must be 0 or more';
-                          if (value > 32767) return 'Max 32767';
-                          return null;
-                        },
+                        keyboardType: const TextInputType.numberWithOptions(
+                          signed: true,
+                        ),
+                        validator: validateStock,
                       ),
                     ),
                   ],

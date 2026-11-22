@@ -11,10 +11,9 @@ import 'auth_providers.dart';
 class CartNotifier extends Notifier<List<CartLine>> {
   @override
   List<CartLine> build() {
-    // Clear the cart on logout / account switch.
-    ref.listen<String?>(currentUserIdProvider, (previous, next) {
-      if (previous != next) state = const [];
-    });
+    // Rebuilds with an empty cart on logout / account switch. Watching avoids
+    // changing state from a listener while the widget tree is building.
+    ref.watch(currentUserIdProvider);
     return const [];
   }
 
