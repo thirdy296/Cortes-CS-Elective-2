@@ -1,31 +1,40 @@
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/product.dart';
 import '../supabase_config.dart';
+import '../utils/errors.dart';
 
-/// All Supabase queries for the `products` table live here, so widgets and
-/// providers never build queries themselves.
+/// The only code that queries the `products` table and the image bucket.
 class ProductService {
-  static const table = 'products';
+  static const _table = 'products';
+  static const imageBucket = 'product-images';
 
-  /// Fetches ONE page of products. Filtering and paging both happen in the
-  /// database:
-  ///   * `.eq('category')`        – category filter (optional)
-  ///   * `.gte/.lte('price')`     – price slider range
-  ///   * `.range(from, to)`       – only the rows for this page
-  ///   * `.count(CountOption.exact)` – total matching rows, for page numbers
+  /// One page of products, filtered and paged in the database:
+  ///   * `.ilike('name')`          – search box
+  ///   * `.eq('category_id')`      – category chips
+  ///   * `.gte/.lte('price')`      – price slider
+  ///   * `.range(from, to)`        – only this page's rows
+  ///   * `.count(CountOption.exact)` – total, for page numbers
   Future<ProductPage> fetchPage({
     required int page,
     required int pageSize,
-    String? category,
+    String search = '',
+    int? categoryId,
     double? minPrice,
     double? maxPrice,
   }) async {
     final from = page * pageSize;
-    final to = from + pageSize - 1; // range() is inclusive on both ends
+    final to = from + pageSize - 1; // range() is inclusive
 
-    var query = supabase.from(table).select();
-    if (category != null) query = query.eq('category', category);
+    var query = supabase.from(_table).select(Product.selectColumns);
+    if (search.isNotEmpty) {
+      // Escape the LIKE wildcards so "%" and "_" are searched literally.
+      final escaped = search.replaceAll(RegExp(r'([%_\\])'), r'\$1');
+      query = query.ilike('name', '%$escaped%');
+    }
+    if (categoryId != null) query = query.eq('category_id', categoryId);
     if (minPrice != null) query = query.gte('price', minPrice);
     if (maxPrice != null) query = query.lte('price', maxPrice);
 
@@ -43,41 +52,57 @@ class ProductService {
     );
   }
 
-  /// Cheapest and most expensive product, used as the slider's min/max.
+  /// Cheapest and most expensive product: the slider's limits.
   Future<PriceBounds> fetchPriceBounds() async {
-    final cheapest = await supabase
-        .from(table)
-        .select('price')
-        .order('price', ascending: true)
-        .limit(1)
-        .maybeSingle();
-    final priciest = await supabase
-        .from(table)
-        .select('price')
-        .order('price', ascending: false)
-        .limit(1)
-        .maybeSingle();
+    Future<double> edge({required bool ascending}) async {
+      final row = await supabase
+          .from(_table)
+          .select('price')
+          .order('price', ascending: ascending)
+          .limit(1)
+          .maybeSingle();
+      return (row?['price'] as num?)?.toDouble() ?? 0;
+    }
 
-    final min = (cheapest?['price'] as num?)?.toDouble() ?? 0;
-    final max = (priciest?['price'] as num?)?.toDouble() ?? 0;
-    return PriceBounds(min, max);
+    return PriceBounds(
+      await edge(ascending: true),
+      await edge(ascending: false),
+    );
   }
 
-  /// Distinct category names, sorted, for the filter chips.
-  Future<List<String>> fetchCategories() async {
-    final rows = await supabase.from(table).select('category');
-    final names = {for (final row in rows) row['category'] as String};
-    return names.toList()..sort();
-  }
+  Future<void> create(ProductDraft draft) =>
+      supabase.from(_table).insert(draft.toJson());
 
-  Future<void> update(Product product) async {
+  Future<void> update(int id, ProductDraft draft) async => ensureChanged(
     await supabase
-        .from(table)
-        .update(product.toUpdateJson())
-        .eq('id', product.id);
-  }
+        .from(_table)
+        .update(draft.toJson())
+        .eq('id', id)
+        .select('id'),
+  );
 
-  Future<void> delete(int id) async {
-    await supabase.from(table).delete().eq('id', id);
+  Future<void> delete(int id) async => ensureChanged(
+    await supabase.from(_table).delete().eq('id', id).select('id'),
+  );
+
+  /// Uploads an image to Supabase Storage and returns its public URL.
+  Future<String> uploadImage(Uint8List bytes, String fileName) async {
+    final ext = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : 'jpg';
+    final contentType = switch (ext) {
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      'gif' => 'image/gif',
+      _ => 'image/jpeg',
+    };
+    final path = 'products/${DateTime.now().microsecondsSinceEpoch}.$ext';
+    final storage = supabase.storage.from(imageBucket);
+    await storage.uploadBinary(
+      path,
+      bytes,
+      fileOptions: FileOptions(contentType: contentType, upsert: false),
+    );
+    return storage.getPublicUrl(path);
   }
 }

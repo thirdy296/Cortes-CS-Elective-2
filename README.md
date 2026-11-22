@@ -1,88 +1,82 @@
-# flutter_application_1
+# Brew & Bean: Flutter + Supabase coffee shop (final exam)
 
-A new Flutter project.
+A role-based e-commerce app. **Admins** manage products, categories and
+orders; **customers** browse, filter, build a cart, check out and review
+their orders.
 
-## Supabase setup
+| Area | Used |
+|---|---|
+| State management | Riverpod (`lib/providers`) |
+| Backend | Supabase Auth, Postgres, Row Level Security |
+| Sign-in | Email + password, and Google |
+| Images | Supabase Storage bucket `product-images` |
 
-This app uses the Supabase project **cs-elective-2** (Singapore region).
-The database has a `songs` table (see `supabase/migrations/`) that the
-player screen reads from.
+## Project structure
 
-1. Create `supabase.json` in the project root with the project URL and
-   publishable key (format in `supabase.example.json`). Find them in the
-   Supabase dashboard under **Project Settings → API Keys**.
-   `supabase.json` is git-ignored, so your keys stay out of GitHub.
-2. Install packages and run:
-
-   ```sh
-   flutter pub get
-   flutter run --dart-define-from-file=supabase.json
-   ```
-
-Use the client anywhere after importing `supabase_config.dart`:
-
-```dart
-final rows = await supabase.from('songs').select();
+```
+lib/
+  models/      plain data classes (Product, Category, Profile, Order, CartLine)
+  services/    the ONLY code that talks to Supabase
+  providers/   Riverpod state; screens call these, these call services
+  screens/     pages (auth, admin home, customer home, cart, orders, forms)
+  widgets/     reusable UI (product card, filters, state views, order tile)
+  theme/       app-wide coffee theme
+  utils/       error messages and formatters
+supabase/migrations/   SQL for tables, functions, triggers, RLS, storage
 ```
 
-## Price filter + pagination (branch `backend-filter-pagination`)
+## Database (run once)
 
-The home screen is now a shop that reads the Supabase `products` table.
+Open Supabase → **SQL Editor**, paste
+`supabase/migrations/20261122090000_final_exam_schema.sql` and **Run**.
+It creates:
 
-1. Create the table and seed data: run
-   `supabase/migrations/20261110090000_create_products.sql` in the Supabase
-   SQL editor (24 products, 4 categories).
-2. Run the app as above.
+- Tables `roles`, `profiles`, `categories`, `products`, `orders`,
+  `order_items` (with name and unit-price snapshots), plus seed data.
+- `is_admin()` and the `handle_new_user()` trigger on `auth.users`, which
+  creates a **customer** profile for every new account (email or Google).
+- `place_order(items)`: checkout in **one transaction**. It locks each
+  product, checks stock, reads the price and name from the database,
+  saves the order and its items, reduces stock and sets status `done`. Any
+  failure rolls everything back.
+- RLS on every table, matching the permission table. Column privileges
+  stop customers from changing `profiles.role_id` and stop admins from
+  changing anything on an order except `status`.
+- Storage bucket `product-images` (admin-only upload).
 
-Features:
+**Make yourself an admin** after signing up once:
 
-- **Price slider** (`RangeSlider`): limits come from the cheapest and most
-  expensive product. Letting go of the slider filters with
-  `.gte('price', min).lte('price', max)` in Supabase.
-- **Category chips**, **edit** and **delete** on every product card.
-- **Pagination**: 8 products per page, fetched with
-  `.range(from, to).count(CountOption.exact)` so only one page is downloaded
-  and the total count gives the page numbers.
-- **State management**: Riverpod (`lib/providers/shop_providers.dart`).
-  `ShopFilter` holds category, price range and page; `productPageProvider`
-  watches it and re-runs the Supabase query. Changing a filter resets to
-  page 1; deleting the last item on a page steps back one page.
-- The original music player is still reachable from the app bar.
+```sql
+update public.profiles
+set role_id = (select id from public.roles where role = 'admin')
+where email = 'you@example.com';
+```
 
-## Authentication (branch `backend-auth`)
+### Why hiding a button is not security
 
-The shop now requires sign-in. Two options:
+The app hides Add/Edit/Delete from customers, but anyone can call the
+Supabase API directly with the publishable key. The real protection is
+RLS: `create product` checks `is_admin()`, so a customer's insert is
+rejected by Postgres no matter what the UI shows.
 
-- **Email + password** (Supabase's built-in provider), with sign up.
-- **GitHub** as the additional third-party provider (OAuth).
+## Google sign-in setup
 
-How it works: `lib/services/auth_service.dart` wraps Supabase Auth.
-`sessionProvider` (Riverpod, `lib/providers/auth_providers.dart`) follows
-`onAuthStateChange`, and `AuthGate` shows the login screen or the shop. The
-avatar menu in the shop shows who is signed in and with which provider, and
-signs out.
+1. Google Cloud Console → APIs & Services → Credentials → **Create OAuth
+   client ID** → Web application.
+   Authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+2. Supabase → Authentication → Sign In / Providers → **Google** → enable,
+   paste Client ID and Client secret, save.
+3. Supabase → Authentication → URL Configuration → Redirect URLs:
+   `http://localhost:3000/**` and `io.supabase.cselective2://login-callback/`
 
-### Enable GitHub in Supabase (one time)
+## Run
 
-1. GitHub → Settings → Developer settings → OAuth Apps → **New OAuth App**
-   - Homepage URL: `http://localhost:3000`
-   - Authorization callback URL:
-     `https://<project-ref>.supabase.co/auth/v1/callback`
-2. Copy the **Client ID**, generate a **Client secret**.
-3. Supabase → Authentication → Sign In / Providers → **GitHub** → enable,
-   paste both values, save.
-4. Supabase → Authentication → URL Configuration → **Redirect URLs**, add:
-   - `http://localhost:3000/**` (web)
-   - `io.supabase.cselective2://login-callback/` (Android/iOS)
-
-Run on web with a fixed port so the redirect matches:
+Create `supabase.json` (git-ignored, format in `supabase.example.json`), then:
 
 ```sh
+flutter pub get
 flutter run -d chrome --web-port 3000 --dart-define-from-file=supabase.json
 ```
-
-On Android/iOS the deep link `io.supabase.cselective2://login-callback/` is
-registered in `AndroidManifest.xml` and `Info.plist`.
 
 ## Getting Started
 

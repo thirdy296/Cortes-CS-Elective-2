@@ -11,3 +11,30 @@ String formatPeso(double value) {
   }
   return '₱$buffer${parts.length > 1 ? '.${parts[1]}' : ''}';
 }
+
+const _months = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+/// e.g. "Nov 22, 2026 · 3:05 PM"
+String formatDateTime(DateTime d) {
+  final hour = d.hour % 12 == 0 ? 12 : d.hour % 12;
+  final minute = d.minute.toString().padLeft(2, '0');
+  final ampm = d.hour < 12 ? 'AM' : 'PM';
+  return '${_months[d.month - 1]} ${d.day}, ${d.year} · $hour:$minute $ampm';
+}
+
+/// "pending" → "Pending"
+String capitalize(String s) =>
+    s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);

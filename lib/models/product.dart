@@ -1,56 +1,73 @@
-/// One row of the Supabase `products` table.
+/// One row of the `products` table (with its category name joined in).
 class Product {
   const Product({
     required this.id,
     required this.name,
     required this.description,
-    required this.category,
     required this.price,
+    required this.stock,
+    required this.categoryId,
+    this.categoryName,
     this.imageUrl,
   });
 
   final int id;
   final String name;
   final String description;
-  final String category;
   final double price;
+  final int stock;
+  final int categoryId;
+  final String? categoryName;
   final String? imageUrl;
+
+  bool get inStock => stock > 0;
+
+  /// Columns selected for every product query.
+  static const selectColumns = '*, categories(name)';
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
     id: (json['id'] as num).toInt(),
     name: json['name'] as String,
     description: (json['description'] as String?) ?? '',
-    category: json['category'] as String,
-    // `numeric` columns arrive as int or double depending on the value.
+    // real/numeric columns arrive as int or double.
     price: (json['price'] as num).toDouble(),
+    stock: (json['stock'] as num).toInt(),
+    categoryId: (json['category_id'] as num).toInt(),
+    categoryName:
+        (json['categories'] as Map<String, dynamic>?)?['name'] as String?,
     imageUrl: json['image_url'] as String?,
-  );
-
-  /// Only the columns the edit dialog is allowed to change.
-  Map<String, dynamic> toUpdateJson() => {
-    'name': name,
-    'description': description,
-    'category': category,
-    'price': price,
-  };
-
-  Product copyWith({
-    String? name,
-    String? description,
-    String? category,
-    double? price,
-  }) => Product(
-    id: id,
-    name: name ?? this.name,
-    description: description ?? this.description,
-    category: category ?? this.category,
-    price: price ?? this.price,
-    imageUrl: imageUrl,
   );
 }
 
-/// One page of products plus the total number of rows that match the
-/// current filters (used to compute how many pages there are).
+/// What the admin form sends to insert or update a product.
+class ProductDraft {
+  const ProductDraft({
+    required this.name,
+    required this.description,
+    required this.price,
+    required this.stock,
+    required this.categoryId,
+    this.imageUrl,
+  });
+
+  final String name;
+  final String description;
+  final double price;
+  final int stock;
+  final int categoryId;
+  final String? imageUrl;
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'description': description,
+    'price': price,
+    'stock': stock,
+    'category_id': categoryId,
+    'image_url': imageUrl,
+  };
+}
+
+/// One page of products plus the total that match the filters.
 class ProductPage {
   const ProductPage({
     required this.items,
